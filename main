@@ -1,0 +1,43 @@
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.cluster import KMeans
+import joblib
+
+# Load dataset
+df = pd.read_csv('new_model.csv')
+print("Data Loaded:", df.shape)
+
+# Drop duplicates
+df = df.drop_duplicates()
+
+# Handle missing values
+df = df.fillna(df.median(numeric_only=True))
+df = df.fillna(df.mode().iloc[0])
+
+# Encode categorical columns
+for c in df.select_dtypes(include=['object']):
+    df[c] = LabelEncoder().fit_transform(df[c])
+
+print("After preprocessing:", df.head())
+
+# Feature selection (unsupervised learning → no target column)
+X = df.copy()
+
+# Scaling (important for K-Means)
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# K-Means model
+kmeans = KMeans(n_clusters=5, random_state=42, n_init=10)
+kmeans.fit(X_scaled)
+
+# Add cluster labels
+df['Cluster'] = kmeans.labels_
+
+print("Cluster counts:")
+print(df['Cluster'].value_counts())
+
+# Save model
+joblib.dump(kmeans, 'new_model_kmeans.pkl')
+
+print("Model saved successfully!")
